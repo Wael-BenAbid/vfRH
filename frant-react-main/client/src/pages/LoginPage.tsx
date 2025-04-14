@@ -8,7 +8,6 @@ const LoginPage: React.FC = () => {
   const [_, setLocation] = useLocation();
   const { isAuthenticated } = useSelector((state: RootState) => state.auth);
   
-  // Redirect to dashboard if already authenticated
   if (isAuthenticated) {
     setLocation('/dashboard');
     return null;
