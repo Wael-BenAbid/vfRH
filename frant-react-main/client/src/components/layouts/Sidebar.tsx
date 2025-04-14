@@ -102,18 +102,23 @@ const Sidebar: React.FC<SidebarProps> = ({ open, user }) => {
         
         {/* User Info */}
         {user && (
-          <div className="flex items-center p-4 border-b border-gray-200">
-            <div className="w-10 h-10 rounded-full bg-primary-100 flex items-center justify-center overflow-hidden">
-              <span className="text-primary-700 font-medium">
-                {user.first_name.charAt(0)}{user.last_name.charAt(0)}
-              </span>
-            </div>
-            <div className="ml-3">
-              <p className="text-sm font-medium text-gray-800">{`${user.first_name} ${user.last_name}`}</p>
-              <p className="text-xs text-gray-500">{user.user_type.charAt(0).toUpperCase() + user.user_type.slice(1)}</p>
-            </div>
-          </div>
-        )}
+  <div className="flex items-center p-4 border-b border-gray-200">
+    <div className="w-10 h-10 rounded-full bg-primary-100 flex items-center justify-center overflow-hidden">
+      <span className="text-primary-700 font-medium">
+        {(user.first_name?.charAt(0) || '') + (user.last_name?.charAt(0) || '')}
+      </span>
+    </div>
+    <div className="ml-3">
+      <p className="text-sm font-medium text-gray-800">
+        {(user.first_name || '') + ' ' + (user.last_name || '')}
+      </p>
+      <p className="text-xs text-gray-500">
+        {user.user_type ? user.user_type.charAt(0).toUpperCase() + user.user_type.slice(1) : ''}
+      </p>
+    </div>
+  </div>
+)}
+
         
         {/* Navigation */}
         <nav className="flex-1 overflow-y-auto py-4">
