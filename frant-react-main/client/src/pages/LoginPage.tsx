@@ -1,18 +1,19 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import LoginForm from '../components/auth/LoginForm';
-import { useLocation } from 'wouter';
+import { useNavigate } from 'react-router-dom';
 import { useSelector } from 'react-redux';
 import { RootState } from '../store';
 
 const LoginPage: React.FC = () => {
-  const [_, setLocation] = useLocation();
+  const navigate = useNavigate();
   const { isAuthenticated } = useSelector((state: RootState) => state.auth);
-  
-  if (isAuthenticated) {
-    setLocation('/dashboard');
-    return null;
-  }
-  
+
+  useEffect(() => {
+    if (isAuthenticated) {
+      navigate('/dashboard');
+    }
+  }, [isAuthenticated, navigate]);
+
   return <LoginForm />;
 };
 

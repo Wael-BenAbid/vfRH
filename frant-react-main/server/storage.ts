@@ -112,7 +112,7 @@ export class MemStorage implements IStorage {
     const user: User = { 
       ...insertUser, 
       id,
-      leave_balance: insertUser.leave_balance || 30,
+      leave_balance: insertUser.leave_balance || '30',
       user_type: insertUser.user_type || 'employee'
     };
     this.users.set(id, user);
@@ -135,7 +135,7 @@ export class MemStorage implements IStorage {
 
   async getLeavesByUser(userId: number): Promise<Leave[]> {
     return Array.from(this.leaves.values()).filter(
-      (leave) => leave.user === userId,
+      (leave) => leave.user_id === userId,
     );
   }
 
@@ -149,7 +149,7 @@ export class MemStorage implements IStorage {
     const leave: Leave = { 
       ...insertLeave, 
       id, 
-      created_at: now,
+      created_at: new Date(now),
       status: 'pending',
       user_name: 'User Name' // Would be populated from user data in real implementation
     };
@@ -174,7 +174,7 @@ export class MemStorage implements IStorage {
     this.leaves.set(id, updatedLeave);
     
     // Update user leave balance
-    const user = this.users.get(leave.user);
+    const user = this.users.get(leave.user_id);
     if (user) {
       const startDate = new Date(leave.start_date);
       const endDate = new Date(leave.end_date);
@@ -182,7 +182,7 @@ export class MemStorage implements IStorage {
       
       const updatedUser = { 
         ...user, 
-        leave_balance: Math.max(0, user.leave_balance - daysDiff) 
+        leave_balance: Math.max(0, Number(user.leave_balance) - daysDiff).toString() 
       };
       this.users.set(user.id, updatedUser);
     }
@@ -206,13 +206,13 @@ export class MemStorage implements IStorage {
 
   async getMissionsByAssignee(userId: number): Promise<Mission[]> {
     return Array.from(this.missions.values()).filter(
-      (mission) => mission.assigned_to === userId,
+      (mission) => mission.assigned_to_id === userId,
     );
   }
 
   async getMissionsBySupervisor(userId: number): Promise<Mission[]> {
     return Array.from(this.missions.values()).filter(
-      (mission) => mission.supervisor === userId,
+      (mission) => mission.supervisor_id === userId,
     );
   }
 
@@ -226,7 +226,7 @@ export class MemStorage implements IStorage {
     const mission: Mission = { 
       ...insertMission, 
       id, 
-      created_at: now,
+      created_at: new Date(now),
       completed: false,
       assigned_to_name: 'Assignee Name', // Would be populated from user data in real implementation
       supervisor_name: 'Supervisor Name' // Would be populated from user data in real implementation
@@ -256,7 +256,7 @@ export class MemStorage implements IStorage {
   // Work Hours operations
   async getWorkHoursByUser(userId: number): Promise<WorkHours[]> {
     return Array.from(this.workHours.values()).filter(
-      (workHours) => workHours.user === userId,
+      (workHours) => workHours.user_id === userId,
     );
   }
 
@@ -270,7 +270,7 @@ export class MemStorage implements IStorage {
     const workHours: WorkHours = { 
       ...insertWorkHours, 
       id, 
-      created_at: now,
+      created_at: new Date(now),
       user_name: 'User Name' // Would be populated from user data in real implementation
     };
     this.workHours.set(id, workHours);
@@ -284,13 +284,13 @@ export class MemStorage implements IStorage {
 
   async getInternshipsByIntern(userId: number): Promise<Internship[]> {
     return Array.from(this.internships.values()).filter(
-      (internship) => internship.intern === userId,
+      (internship) => internship.intern_id === userId,
     );
   }
 
   async getInternshipsBySupervisor(userId: number): Promise<Internship[]> {
     return Array.from(this.internships.values()).filter(
-      (internship) => internship.supervisor === userId,
+      (internship) => internship.supervisor_id === userId,
     );
   }
 
@@ -304,7 +304,7 @@ export class MemStorage implements IStorage {
     const internship: Internship = { 
       ...insertInternship, 
       id, 
-      created_at: now,
+      created_at: new Date(now),
       status: 'pending',
       intern_name: 'Intern Name', // Would be populated from user data in real implementation
       supervisor_name: 'Supervisor Name' // Would be populated from user data in real implementation
@@ -338,7 +338,7 @@ export class MemStorage implements IStorage {
 
   async getJobApplicationsByUser(userId: number): Promise<JobApplication[]> {
     return Array.from(this.jobApplications.values()).filter(
-      (application) => application.user === userId,
+      (application) => application.user_id === userId,
     );
   }
 
@@ -352,8 +352,9 @@ export class MemStorage implements IStorage {
     const application: JobApplication = { 
       ...insertApplication, 
       id, 
-      created_at: now,
-      status: 'pending'
+      created_at: new Date(now),
+      status: 'pending',
+      user_id: insertApplication.user_id ?? null
     };
     this.jobApplications.set(id, application);
     return application;
