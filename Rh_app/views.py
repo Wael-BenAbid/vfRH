@@ -1,4 +1,6 @@
 from django.shortcuts import render
+
+# Create your views here.
 from rest_framework import viewsets, permissions, status
 from rest_framework.response import Response
 from rest_framework.decorators import action, api_view
@@ -6,6 +8,8 @@ from datetime import datetime
 import logging
 import json
 from django.core.mail import send_mail
+from django.shortcuts import render, redirect
+from django.contrib.auth import login, authenticate
 from django.conf import settings
 
 from .models import User, Leave, Mission, WorkHours, Internship, JobApplication
@@ -22,96 +26,27 @@ class UserViewSet(viewsets.ModelViewSet):
     serializer_class = UserSerializer
     
     def get_permissions(self):
-        if self.action in ['create', 'request_access']:
+        if self.action == 'create':
             return [permissions.AllowAny()]
-        elif self.action in ['approve_user', 'reject_user']:
-            return [permissions.IsAdminUser()]
         return [permissions.IsAuthenticated()]
-
+    
     @action(detail=False, methods=['get'])
     def me(self, request):
         serializer = self.get_serializer(request.user)
         return Response(serializer.data)
-
-    @action(detail=False, methods=['post'])
-    def request_access(self, request):
-        """
-        Demander l'accès au système
-        """
+        
+    def create(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
-        user = serializer.save(is_active=False)  # Créer un utilisateur inactif
-        
-        # Notifier les administrateurs de la demande d'accès
-        admin_emails = User.objects.filter(user_type='admin').values_list('email', flat=True)
-        try:
-            send_mail(
-                'Nouvelle demande d\'accès utilisateur',
-                f'Un nouvel utilisateur a demandé un accès:\nNom: {user.get_full_name()}\nEmail: {user.email}\nRôle: {user.user_type}',
-                settings.DEFAULT_FROM_EMAIL,
-                list(admin_emails),
-                fail_silently=False,
-            )
-        except Exception as e:
-            logger.error(f"Échec de l'envoi de la notification aux administrateurs: {str(e)}")
-        
+        user = serializer.save()
         return Response({
-            'message': 'Demande d\'accès soumise avec succès. Un administrateur examinera votre demande.'
+            'user': UserSerializer(user).data,
+            'message': 'User created successfully'
         }, status=status.HTTP_201_CREATED)
-
-    @action(detail=True, methods=['post'])
-    def approve_user(self, request, pk=None):
-        """
-        Approuver une demande d'accès utilisateur
-        """
-        user = self.get_object()
-        if not request.user.user_type == 'admin':
-            return Response({'error': 'Seuls les administrateurs peuvent approuver les utilisateurs'}, status=status.HTTP_403_FORBIDDEN)
-        
-        user.is_active = True
-        user.save()
-        
-        # Envoyer un e-mail d'approbation
-        try:
-            send_mail(
-                'Votre demande d\'accès a été approuvée',
-                f'Votre demande d\'accès a été approuvée. Vous pouvez maintenant vous connecter au système.',
-                settings.DEFAULT_FROM_EMAIL,
-                [user.email],
-                fail_silently=False,
-            )
-        except Exception as e:
-            logger.error(f"Échec de l'envoi de l'e-mail d'approbation: {str(e)}")
-        
-        return Response({'status': 'utilisateur approuvé'})
-
-    @action(detail=True, methods=['post'])
-    def reject_user(self, request, pk=None):
-        """
-        Rejeter une demande d'accès utilisateur
-        """
-        user = self.get_object()
-        if not request.user.user_type == 'admin':
-            return Response({'error': 'Seuls les administrateurs peuvent rejeter les utilisateurs'}, status=status.HTTP_403_FORBIDDEN)
-        
-        # Envoyer un e-mail de rejet avant de supprimer
-        try:
-            send_mail(
-                'Statut de votre demande d\'accès',
-                f'Nous regrettons de vous informer que votre demande d\'accès a été rejetée.',
-                settings.DEFAULT_FROM_EMAIL,
-                [user.email],
-                fail_silently=False,
-            )
-        except Exception as e:
-            logger.error(f"Échec de l'envoi de l'e-mail de rejet: {str(e)}")
-        
-        user.delete()
-        return Response({'status': 'utilisateur rejeté'})
-
+    
     def get_queryset(self):
         """
-        Filtrer les résultats en fonction du type d'utilisateur
+        Limiter les résultats en fonction du type d'utilisateur
         """
         user = self.request.user
         if user.is_superuser or user.user_type == 'admin':
@@ -171,7 +106,7 @@ class MissionViewSet(viewsets.ModelViewSet):
     queryset = Mission.objects.all()
     serializer_class = MissionSerializer
     permission_classes = [permissions.IsAuthenticated]
-
+    
     def get_queryset(self):
         """
         Limiter les résultats en fonction du type d'utilisateur
@@ -179,16 +114,31 @@ class MissionViewSet(viewsets.ModelViewSet):
         user = self.request.user
         if user.is_superuser or user.user_type == 'admin':
             return Mission.objects.all()
-        return Mission.objects.filter(user=user)
-
+        return Mission.objects.filter(assigned_to=user) | Mission.objects.filter(supervisor=user)
+    
     def perform_create(self, serializer):
-        serializer.save(user=self.request.user)
+        if self.request.user.user_type == 'intern':
+            return Response({'error': 'Intern cannot create missions'}, status=status.HTTP_403_FORBIDDEN)
+        serializer.save()
+    
+    @action(detail=True, methods=['post'])
+    def complete_mission(self, request, pk=None):
+        """
+        Marquer une mission comme complétée
+        """
+        mission = self.get_object()
+        if request.user != mission.assigned_to and request.user != mission.supervisor:
+            return Response({'error': 'Permission denied'}, status=status.HTTP_403_FORBIDDEN)
+        
+        mission.completed = True
+        mission.save()
+        return Response({'status': 'mission completed'})
 
 class WorkHoursViewSet(viewsets.ModelViewSet):
     queryset = WorkHours.objects.all()
     serializer_class = WorkHoursSerializer
     permission_classes = [permissions.IsAuthenticated]
-
+    
     def get_queryset(self):
         """
         Limiter les résultats en fonction du type d'utilisateur
@@ -197,15 +147,20 @@ class WorkHoursViewSet(viewsets.ModelViewSet):
         if user.is_superuser or user.user_type == 'admin':
             return WorkHours.objects.all()
         return WorkHours.objects.filter(user=user)
-
+    
     def perform_create(self, serializer):
-        serializer.save(user=self.request.user)
+        if 'user' not in self.request.data:
+            serializer.save(user=self.request.user)
+        else:
+            if self.request.user.user_type != 'admin' and not self.request.user.is_superuser:
+                return Response({'error': 'Permission denied'}, status=status.HTTP_403_FORBIDDEN)
+            serializer.save()
 
 class InternshipViewSet(viewsets.ModelViewSet):
     queryset = Internship.objects.all()
     serializer_class = InternshipSerializer
     permission_classes = [permissions.IsAuthenticated]
-
+    
     def get_queryset(self):
         """
         Limiter les résultats en fonction du type d'utilisateur
@@ -213,16 +168,64 @@ class InternshipViewSet(viewsets.ModelViewSet):
         user = self.request.user
         if user.is_superuser or user.user_type == 'admin':
             return Internship.objects.all()
-        return Internship.objects.filter(user=user)
+        if user.user_type == 'intern':
+            return Internship.objects.filter(intern=user)
+        return Internship.objects.filter(supervisor=user)
+    
+    @action(detail=True, methods=['post'])
+    def change_status(self, request, pk=None):
+        """
+        Changer le statut d'un stage
+        """
+        internship = self.get_object()
+        if request.user != internship.supervisor and request.user.user_type != 'admin':
+            return Response({'error': 'Permission denied'}, status=status.HTTP_403_FORBIDDEN)
+        
+        status_value = request.data.get('status')
+        if status_value in ['pending', 'active', 'completed', 'terminated']:
+            internship.status = status_value
+            internship.save()
+            return Response({'status': f'internship status changed to {status_value}'})
+        return Response({'error': 'Invalid status'}, status=status.HTTP_400_BAD_REQUEST)
 
-    def perform_create(self, serializer):
-        serializer.save(user=self.request.user)
+def signup_view(request):
+    """
+    Vue pour l'inscription des utilisateurs
+    """
+    if request.method == 'POST':
+        username = request.POST.get('username')
+        email = request.POST.get('email')
+        password = request.POST.get('password')
+        first_name = request.POST.get('first_name', '')
+        last_name = request.POST.get('last_name', '')
+        
+        if User.objects.filter(username=username).exists():
+            return render(request, 'signup.html', {'error': 'Username already exists'})
+        
+        if User.objects.filter(email=email).exists():
+            return render(request, 'signup.html', {'error': 'Email already exists'})
+        
+        user = User.objects.create_user(
+            username=username,
+            email=email,
+            password=password,
+            first_name=first_name,
+            last_name=last_name,
+            user_type='employee'  # Par défaut, les nouveaux utilisateurs sont des employés
+        )
+        
+        user = authenticate(username=username, password=password)
+        if user:
+            login(request, user)
+            return redirect('dashboard')
+    
+    return render(request, 'signup.html')
 
 class JobApplicationViewSet(viewsets.ModelViewSet):
     queryset = JobApplication.objects.all()
     serializer_class = JobApplicationSerializer
     permission_classes = [permissions.IsAuthenticated]
-
+    
     def get_queryset(self):
         """
         Limiter les résultats en fonction du type d'utilisateur
@@ -231,6 +234,61 @@ class JobApplicationViewSet(viewsets.ModelViewSet):
         if user.is_superuser or user.user_type == 'admin':
             return JobApplication.objects.all()
         return JobApplication.objects.filter(user=user)
-
+    
     def perform_create(self, serializer):
-        serializer.save(user=self.request.user)
+        if self.request.user.is_authenticated:
+            serializer.save(user=self.request.user)
+        else:
+            serializer.save()
+    
+    @action(detail=True, methods=['post'])
+    def approve(self, request, pk=None):
+        """
+        Approuver une candidature
+        """
+        application = self.get_object()
+        if request.user.user_type != 'admin' and not request.user.is_superuser:
+            return Response({'error': 'Permission denied'}, status=status.HTTP_403_FORBIDDEN)
+        
+        application.status = 'approved'
+        application.save()
+        
+        # Envoyer un email au candidat (simulation)
+        try:
+            send_mail(
+                'Your application has been approved',
+                f'Congratulations! Your application for {application.position} has been approved.',
+                settings.DEFAULT_FROM_EMAIL,
+                [application.email],
+                fail_silently=False,
+            )
+        except Exception as e:
+            logger.error(f"Email sending failed: {str(e)}")
+        
+        return Response({'status': 'application approved'})
+    
+    @action(detail=True, methods=['post'])
+    def reject(self, request, pk=None):
+        """
+        Rejeter une candidature
+        """
+        application = self.get_object()
+        if request.user.user_type != 'admin' and not request.user.is_superuser:
+            return Response({'error': 'Permission denied'}, status=status.HTTP_403_FORBIDDEN)
+        
+        application.status = 'rejected'
+        application.save()
+        
+        # Envoyer un email au candidat (simulation)
+        try:
+            send_mail(
+                'Your application status',
+                f'Thank you for your interest in {application.position}. Unfortunately, we have decided to move forward with other candidates.',
+                settings.DEFAULT_FROM_EMAIL,
+                [application.email],
+                fail_silently=False,
+            )
+        except Exception as e:
+            logger.error(f"Email sending failed: {str(e)}")
+        
+        return Response({'status': 'application rejected'})
