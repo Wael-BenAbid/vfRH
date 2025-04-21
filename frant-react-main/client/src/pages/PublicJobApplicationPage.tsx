@@ -5,7 +5,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import axios from 'axios';
 import { useToast } from '@/hooks/use-toast';
-import { Link } from 'wouter';
+import { Link } from 'react-router-dom'; // Remplacement de wouter par react-router-dom
 import { WaveyBackground } from '@/components/ui/wavey-background';
 import { AnimatedGradient } from '@/components/ui/animated-gradient';
 import { FloatingShapes } from '@/components/ui/floating-shapes';
@@ -181,7 +181,7 @@ const PublicJobApplicationPage: React.FC = () => {
               </p>
               
               <Button asChild>
-                <Link href="/" className="inline-flex items-center">
+                <Link to="/" className="inline-flex items-center">
                   <ArrowLeft className="mr-2 h-4 w-4" /> Retour à la page d'accueil
                 </Link>
               </Button>
@@ -201,7 +201,7 @@ const PublicJobApplicationPage: React.FC = () => {
         <div className="container mx-auto max-w-6xl">
           <div className="text-center mb-4">
             <Button asChild variant="outline" size="sm" className="mb-6">
-              <Link href="/">
+              <Link to="/">
                 <ArrowLeft className="mr-2 h-4 w-4" /> Retour à l'accueil
               </Link>
             </Button>

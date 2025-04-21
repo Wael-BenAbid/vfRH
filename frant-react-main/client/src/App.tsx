@@ -1,4 +1,4 @@
-import { Switch, Route, Redirect } from "wouter";
+import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
 import NotFound from "@/pages/not-found";
@@ -21,7 +21,7 @@ import PublicJobApplicationPage from "./pages/PublicJobApplicationPage";
 import HomePage from "./pages/HomePage";
 
 // Auth guard component
-const PrivateRoute = ({ component: Component, ...rest }: { component: React.ComponentType<any>, path: string }) => {
+const PrivateRoute = ({ children }: { children: JSX.Element }) => {
   const { isAuthenticated, loading } = useSelector((state: RootState) => state.auth);
 
   if (loading) {
@@ -37,65 +37,98 @@ const PrivateRoute = ({ component: Component, ...rest }: { component: React.Comp
   }
 
   if (!isAuthenticated) {
-    return <Redirect to="/login" />;
+    return <Navigate to="/login" />;
   }
 
-  return <Component {...rest} />;
+  return children;
 };
 
-function Router() {
+function AppRouter() {
   const dispatch = useDispatch();
-  const { isAuthenticated } = useSelector((state: RootState) => state.auth);
 
   useEffect(() => {
     dispatch(checkAuthStatus() as any);
   }, [dispatch]);
 
   return (
-    <Switch>
+    <Routes>
       {/* Pages publiques */}
-      <Route path="/" component={HomePage} />
-      <Route path="/login" component={LoginPage} />
-      <Route path="/postuler" component={PublicJobApplicationPage} />
-      
+      <Route path="/" element={<HomePage />} />
+      <Route path="/login" element={<LoginPage />} />
+      <Route path="/postuler" element={<PublicJobApplicationPage />} />
+
       {/* Pages privées */}
-      <Route path="/dashboard">
-        <PrivateRoute component={DashboardPage} path="/dashboard" />
-      </Route>
-      
-      <Route path="/employees">
-        <PrivateRoute component={EmployeesPage} path="/employees" />
-      </Route>
-      
-      <Route path="/leave">
-        <PrivateRoute component={LeavePage} path="/leave" />
-      </Route>
-      
-      <Route path="/missions">
-        <PrivateRoute component={MissionsPage} path="/missions" />
-      </Route>
-      
-      <Route path="/work-hours">
-        <PrivateRoute component={WorkHoursPage} path="/work-hours" />
-      </Route>
-      
-      <Route path="/internships">
-        <PrivateRoute component={InternshipsPage} path="/internships" />
-      </Route>
-      
-      <Route path="/job-applications">
-        <PrivateRoute component={JobApplicationsPage} path="/job-applications" />
-      </Route>
-      
-      <Route component={NotFound} />
-    </Switch>
+      <Route
+        path="/dashboard"
+        element={
+          <PrivateRoute>
+            <DashboardPage />
+          </PrivateRoute>
+        }
+      />
+      <Route
+        path="/employees"
+        element={
+          <PrivateRoute>
+            <EmployeesPage />
+          </PrivateRoute>
+        }
+      />
+      <Route
+        path="/leave"
+        element={
+          <PrivateRoute>
+            <LeavePage />
+          </PrivateRoute>
+        }
+      />
+      <Route
+        path="/missions"
+        element={
+          <PrivateRoute>
+            <MissionsPage />
+          </PrivateRoute>
+        }
+      />
+      <Route
+        path="/work-hours"
+        element={
+          <PrivateRoute>
+            <WorkHoursPage />
+          </PrivateRoute>
+        }
+      />
+      <Route
+        path="/internships"
+        element={
+          <PrivateRoute>
+            <InternshipsPage />
+          </PrivateRoute>
+        }
+      />
+      <Route
+        path="/job-applications"
+        element={
+          <PrivateRoute>
+            <JobApplicationsPage 
+              open={true} 
+              onClose={() => console.log("Closed")} 
+              onSubmit={(data) => console.log("Submitted", data)} 
+            />
+          </PrivateRoute>
+        }
+      />
+      <Route path="*" element={<NotFound />} />
+    </Routes>
   );
 }
 
 function App() {
   return (
     <QueryClientProvider client={queryClient}>
-      <Router />
+      <Router>
+        <AppRouter />
+      </Router>
       <Toaster />
     </QueryClientProvider>
   );

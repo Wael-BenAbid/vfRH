@@ -1,11 +1,11 @@
 import React from 'react';
-import { Link, useLocation } from 'wouter';
+import { NavLink, useLocation } from 'react-router-dom';
 import { Home, Users, Calendar, Briefcase, MoreHorizontal } from 'lucide-react';
 import { useSelector } from 'react-redux';
 import { RootState } from '../../store';
 
 const MobileNavigation: React.FC = () => {
-  const [location] = useLocation();
+  const location = useLocation();
   const { user } = useSelector((state: RootState) => state.auth);
 
   const mobileNavItems = [
@@ -41,23 +41,27 @@ const MobileNavigation: React.FC = () => {
     },
   ];
 
-  const filteredNavItems = user 
-    ? mobileNavItems.filter(item => item.allowedUserTypes.includes(user.user_type as any))
+  const filteredNavItems = user
+    ? mobileNavItems.filter((item) => item.allowedUserTypes.includes(user.user_type as any))
     : [];
 
   return (
     <div className="md:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 flex justify-around px-2 py-2 z-10">
       {filteredNavItems.map((item) => (
-        <Link href={item.href} key={item.name}>
-          <a className={`flex flex-col items-center ${
-            location === item.href 
-              ? 'text-primary-600' 
-              : 'text-gray-500 hover:text-primary-600'
-          } px-2`}>
-            {item.icon}
-            <span className="text-xs mt-1">{item.name}</span>
-          </a>
-        </Link>
+        <NavLink
+          to={item.href}
+          key={item.name}
+          className={({ isActive }) =>
+            `flex flex-col items-center ${
+              isActive
+                ? 'text-primary-600'
+                : 'text-gray-500 hover:text-primary-600'
+            } px-2`
+          }
+        >
+          {item.icon}
+          <span className="text-xs mt-1">{item.name}</span>
+        </NavLink>
       ))}
     </div>
   );

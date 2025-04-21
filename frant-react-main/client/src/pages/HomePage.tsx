@@ -1,6 +1,6 @@
 import React from 'react';
 import { motion } from 'framer-motion';
-import { Link } from 'wouter';
+import { Link, useLocation } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import {
   Card,
@@ -52,13 +52,13 @@ const HomePage: React.FC = () => {
               transition={{ duration: 0.5, delay: 0.2 }}
             >
               <Button size="lg" asChild>
-                <Link href="/login">
+                <Link to="/login">
                   Se connecter <ArrowRight className="ml-2 h-4 w-4" />
                 </Link>
               </Button>
               
               <Button size="lg" variant="outline" asChild>
-                <Link href="/postuler">
+                <Link to="/postuler">
                   Postuler maintenant <Briefcase className="ml-2 h-4 w-4" />
                 </Link>
               </Button>
@@ -134,7 +134,7 @@ const HomePage: React.FC = () => {
                 </p>
               </div>
               <Button size="lg" asChild>
-                <Link href="/postuler">
+                <Link to="/postuler">
                   Voir les offres d'emploi
                   <ArrowRight className="ml-2 h-4 w-4" />
                 </Link>
@@ -156,12 +156,13 @@ const HomePage: React.FC = () => {
             </div>
             
             <div className="flex items-center gap-6">
-              <Link href="/login" className="text-sm text-muted-foreground hover:text-primary">
+              <Link to="/login" className="text-sm text-muted-foreground hover:text-primary">
                 Se connecter
               </Link>
-              <Link href="/postuler" className="text-sm text-muted-foreground hover:text-primary">
+              <Link to="/postuler" className="text-sm text-muted-foreground hover:text-primary">
                 Postuler
               </Link>
+              <Link to="/dashboard">Dashboard</Link>
             </div>
           </div>
         </div>

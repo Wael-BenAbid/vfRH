@@ -3,7 +3,6 @@ from django.core.validators import RegexValidator
 from django.contrib.auth.models import AbstractUser, Group, Permission
 
 class User(AbstractUser):
-    # User type
     USER_TYPE_CHOICES = (
         ('admin', 'Admin'),
         ('employee', 'Employee'),
