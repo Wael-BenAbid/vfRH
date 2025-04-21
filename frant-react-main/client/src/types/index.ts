@@ -116,6 +116,7 @@ export interface UpdateInternshipRequest {
 
 // Job Application Types
 export interface JobApplication {
+  submitted_at: string | number | Date;
   id: number;
   user?: number;
   application_type: 'employee' | 'intern';

@@ -31,7 +31,8 @@ export const login = async (credentials: LoginCredentials): Promise<User> => {
   } catch (error) {
     const axiosError = error as AxiosError;
     if (axiosError.response) {
-      throw new Error(axiosError.response.data.message || 'Login failed');
+      const errorMessage = (axiosError.response.data as { message?: string }).message || 'Login failed';
+      throw new Error(errorMessage);
     }
     throw new Error('Network error. Please try again.');
   }

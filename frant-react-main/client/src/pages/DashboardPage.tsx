@@ -13,13 +13,15 @@ import { RootState } from '../store';
 import { fetchLeaves } from '../store/leaveSlice';
 import { fetchMissions } from '../store/missionSlice';
 import { fetchWorkHours } from '../store/workHoursSlice';
-import { fetchJobApplications } from '../store/jobApplicationSlice';
+import { fetchJobApplications, approveJobApplication, rejectJobApplication } from '../store/jobApplicationSlice';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { format, subDays } from 'date-fns';
+import { Button } from '@/components/ui/button';
 
 const DashboardPage: React.FC = () => {
   const dispatch = useDispatch();
   const { user } = useSelector((state: RootState) => state.auth);
+  const jobApplications = useSelector((state: RootState) => state.jobApplication.jobApplications);
   
   // Fetch data on component mount
   useEffect(() => {
@@ -46,6 +48,15 @@ const DashboardPage: React.FC = () => {
   };
   
   const workHoursData = generateWorkHoursData();
+
+  // Handle approve and reject actions
+  const handleApprove = (id: number) => {
+    dispatch(approveJobApplication(id) as any);
+  };
+
+  const handleReject = (id: number) => {
+    dispatch(rejectJobApplication(id) as any);
+  };
 
   return (
     <MainLayout title="Dashboard">
@@ -95,45 +106,93 @@ const DashboardPage: React.FC = () => {
       
       {/* Messages, Announcements, or other content can go here */}
       {user?.user_type === 'admin' && (
-        <Card>
-          <CardHeader>
-            <CardTitle>Admin Quick Links</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
-              <div className="p-4 bg-primary-50 rounded-lg text-center">
-                <h3 className="font-medium text-primary-900">Pending Leaves</h3>
-                <p className="text-2xl font-bold text-primary-700">
-                  {useSelector((state: RootState) => 
-                    state.leave.leaves.filter(leave => leave.status === 'pending').length
-                  )}
-                </p>
+        <>
+          <Card>
+            <CardHeader>
+              <CardTitle>Admin Quick Links</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
+                <div className="p-4 bg-primary-50 rounded-lg text-center">
+                  <h3 className="font-medium text-primary-900">Pending Leaves</h3>
+                  <p className="text-2xl font-bold text-primary-700">
+                    {useSelector((state: RootState) => 
+                      state.leave.leaves.filter(leave => leave.status === 'pending').length
+                    )}
+                  </p>
+                </div>
+                <div className="p-4 bg-amber-50 rounded-lg text-center">
+                  <h3 className="font-medium text-amber-900">Active Missions</h3>
+                  <p className="text-2xl font-bold text-amber-700">
+                    {useSelector((state: RootState) => 
+                      state.mission.missions.filter(mission => !mission.completed).length
+                    )}
+                  </p>
+                </div>
+                <div className="p-4 bg-green-50 rounded-lg text-center">
+                  <h3 className="font-medium text-green-900">New Applications</h3>
+                  <p className="text-2xl font-bold text-green-700">
+                    {useSelector((state: RootState) => 
+                      state.jobApplication.jobApplications.filter(app => app.status === 'pending').length
+                    )}
+                  </p>
+                </div>
+                <div className="p-4 bg-blue-50 rounded-lg text-center">
+                  <h3 className="font-medium text-blue-900">Total Employees</h3>
+                  <p className="text-2xl font-bold text-blue-700">
+                    {useSelector((state: RootState) => state.employee.employees.length)}
+                  </p>
+                </div>
               </div>
-              <div className="p-4 bg-amber-50 rounded-lg text-center">
-                <h3 className="font-medium text-amber-900">Active Missions</h3>
-                <p className="text-2xl font-bold text-amber-700">
-                  {useSelector((state: RootState) => 
-                    state.mission.missions.filter(mission => !mission.completed).length
-                  )}
-                </p>
-              </div>
-              <div className="p-4 bg-green-50 rounded-lg text-center">
-                <h3 className="font-medium text-green-900">New Applications</h3>
-                <p className="text-2xl font-bold text-green-700">
-                  {useSelector((state: RootState) => 
-                    state.jobApplication.jobApplications.filter(app => app.status === 'pending').length
-                  )}
-                </p>
-              </div>
-              <div className="p-4 bg-blue-50 rounded-lg text-center">
-                <h3 className="font-medium text-blue-900">Total Employees</h3>
-                <p className="text-2xl font-bold text-blue-700">
-                  {useSelector((state: RootState) => state.employee.employees.length)}
-                </p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardHeader>
+              <CardTitle>Pending Job Applications</CardTitle>
+            </CardHeader>
+            <CardContent>
+              {jobApplications.length === 0 ? (
+                <p className="text-gray-600">No job applications found.</p>
+              ) : (
+                <div className="grid grid-cols-1 gap-4">
+                  {jobApplications
+                    .filter((app) => app.status === 'pending')
+                    .map((application) => (
+                      <div
+                        key={application.id}
+                        className="p-4 bg-gray-50 rounded-lg flex justify-between items-center"
+                      >
+                        <div>
+                          <h3 className="font-medium text-gray-900">
+                            {application.first_name} {application.last_name}
+                          </h3>
+                          <p className="text-sm text-gray-600">{application.email}</p>
+                          <p className="text-sm text-gray-500">Position: {application.position}</p>
+                          <p className="text-sm text-gray-500">
+                            Submitted on: {new Date(application.submitted_at).toLocaleDateString()}
+                          </p>
+                        </div>
+                        <div className="flex space-x-2">
+                          <Button
+                            variant="secondary"
+                            onClick={() => handleApprove(application.id)}
+                          >
+                            Approve
+                          </Button>
+                          <Button
+                            variant="destructive"
+                            onClick={() => handleReject(application.id)}
+                          >
+                            Reject
+                          </Button>
+                        </div>
+                      </div>
+                    ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </>
       )}
     </MainLayout>
   );

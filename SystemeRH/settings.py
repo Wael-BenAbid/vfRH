@@ -78,11 +78,14 @@ WSGI_APPLICATION = 'SystemeRH.wsgi.application'
 
 # Database
 # https://docs.djangoproject.com/en/5.2/ref/settings/#databases
-
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
+        'ENGINE': 'django.db.backends.postgresql',
+        'NAME': 'rh',  # Database name
+        'USER': 'postgres',  # Database user
+        'PASSWORD': '12345',  # Database password
+        'HOST': 'localhost',  # Database host
+        'PORT': '5433',  # Database port
     }
 }
 
