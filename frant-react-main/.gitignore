@@ -1,0 +1,15 @@
+# Ignore les fichiers compilés Python
+__pycache__/
+*.pyc
+
+# Django stuff:
+*.log
+*.pot
+*.pyc
+db.sqlite3
+media
+*.sqlite3
+
+# Environnements virtuels
+venv/
+.env

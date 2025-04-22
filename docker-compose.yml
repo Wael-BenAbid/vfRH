@@ -1,0 +1,32 @@
+version: '3'
+services:
+  db:
+    image: postgres:latest
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: 12345
+      POSTGRES_DB: rh
+    ports:
+      - "5433:5432"
+    volumes:
+      - ./data/db:/var/lib/postgresql/data
+
+  backend:
+    build: ./back-end
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./back-end:/app
+    depends_on:
+      - db
+    environment:
+      - DATABASE_URL=postgres://postgres:12345@db:5432/rh
+
+  frontend:
+    build: ./frant-react-main
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./frant-react-main:/app
+    depends_on:
+      - backend

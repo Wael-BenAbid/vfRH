@@ -1,0 +1,22 @@
+# === FRONTEND (Angular) ===
+front/node_modules/
+front/dist/
+
+# === BACKEND (Spring Boot ou Django) ===
+__pycache__/
+*.pyc
+back/target/
+
+# === ENVIRONNEMENT & CONFIGURATION ===
+*.log
+*.env
+.env.*
+*.local
+
+# === IDEs & OS files ===
+.idea/
+.vscode/
+.DS_Store
+
+# === GLOBAL node_modules (sécurité) ===
+**/node_modules/

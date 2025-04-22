@@ -1,0 +1,36 @@
+stages:
+  - build
+  - test
+  - deploy
+
+variables:
+  DOCKER_IMAGE: registry.gitlab.com/your_project_name/your-app-frontend
+
+# Étape 1 : Construire l'image Docker
+build:
+  stage: build
+  image: docker:latest
+  services:
+    - docker:dind
+  script:
+    - docker login -u "$CI_REGISTRY_USER" -p "$CI_REGISTRY_PASSWORD" "$CI_REGISTRY"
+    - docker build -t $DOCKER_IMAGE:latest .
+    - docker push $DOCKER_IMAGE:latest
+
+# Étape 2 : Tester l'application
+test:
+  stage: test
+  image: node:16
+  script:
+    - npm install
+    - npm run test
+
+# Étape 3 : Déployer sur Kubernetes
+deploy:
+  stage: deploy
+  image: bitnami/kubectl:latest
+  script:
+    - kubectl apply -f deployment_frontend.yaml
+    - kubectl rollout status deployment/frontend-deployment
+  only:
+    - main

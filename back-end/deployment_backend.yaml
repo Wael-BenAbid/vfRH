@@ -1,0 +1,45 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: backend-deployment
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: backend
+  template:
+    metadata:
+      labels:
+        app: backend
+    spec:
+      containers:
+        - name: backend
+          image: registry.gitlab.com/your_project_name/your-app-backend:latest
+          ports:
+            - containerPort: 8000
+          env:
+            - name: DJANGO_SETTINGS_MODULE
+              value: SystemeRH.settings
+            - name: SECRET_KEY
+              value: 1tm1$zjbpq##!a%kd!pc4(wh=za+@yhy)*eaul-gi+$fweleg%
+            - name: DEBUG
+              value: "True"
+            - name: ALLOWED_HOSTS
+              value: "localhost,127.0.0.1"
+            - name: DATABASE_NAME
+              value: rh
+            - name: DATABASE_USER
+              value: postgres
+            - name: DATABASE_PASSWORD
+              value: "12345"
+            - name: DATABASE_HOST
+              value: localhost
+            - name: DATABASE_PORT
+              value: "5433"
+          resources:
+            requests:
+              memory: "128Mi"
+              cpu: "250m"
+            limits:
+              memory: "256Mi"
+              cpu: "500m"
