@@ -1,6 +1,7 @@
 import { createSlice, createAsyncThunk, PayloadAction } from '@reduxjs/toolkit';
 import { JobApplication, CreateJobApplicationRequest, UpdateJobApplicationRequest } from '../types';
 import * as api from '../lib/api';
+import { useEffect } from 'react';
 
 interface JobApplicationState {
   jobApplications: JobApplication[];
@@ -21,8 +22,10 @@ export const fetchJobApplications = createAsyncThunk(
   async (_, { rejectWithValue }) => {
     try {
       const jobApplications = await api.getJobApplications();
+      console.log('Fetched job applications:', jobApplications); // Vérifiez les données ici
       return jobApplications;
     } catch (error) {
+      console.error('Error in fetchJobApplications:', error); // Log en cas d'erreur
       if (error instanceof Error) {
         return rejectWithValue(error.message);
       }
@@ -76,32 +79,32 @@ export const updateJobApplication = createAsyncThunk(
   }
 );
 
-export const approveJobApplication = createAsyncThunk(
+export const approveJobApplication = createAsyncThunk<JobApplication, number>(
   'jobApplication/approveJobApplication',
   async (id: number, { rejectWithValue }) => {
     try {
-      const jobApplication = await api.approveJobApplication(id);
+      const jobApplication: JobApplication = await api.approveJobApplication(id);
       return jobApplication;
     } catch (error) {
       if (error instanceof Error) {
-        return rejectWithValue(error.message);
+        return rejectWithValue(error.message) as unknown as Promise<JobApplication>;
       }
-      return rejectWithValue('An unknown error occurred');
+      return rejectWithValue('An unknown error occurred') as unknown as Promise<JobApplication>;
     }
   }
 );
 
-export const rejectJobApplication = createAsyncThunk(
+export const rejectJobApplication = createAsyncThunk<JobApplication, number>(
   'jobApplication/rejectJobApplication',
   async (id: number, { rejectWithValue }) => {
     try {
-      const jobApplication = await api.rejectJobApplication(id);
+      const jobApplication: JobApplication = await api.rejectJobApplication(id);
       return jobApplication;
     } catch (error) {
       if (error instanceof Error) {
-        return rejectWithValue(error.message);
+        return rejectWithValue(error.message) as unknown as Promise<JobApplication>;
       }
-      return rejectWithValue('An unknown error occurred');
+      return rejectWithValue('An unknown error occurred') as unknown as Promise<JobApplication>;
     }
   }
 );
@@ -126,11 +129,13 @@ const jobApplicationSlice = createSlice({
       })
       .addCase(fetchJobApplications.fulfilled, (state, action: PayloadAction<JobApplication[]>) => {
         state.loading = false;
-        state.jobApplications = action.payload;
+        state.jobApplications = action.payload; // Stockez les données ici
+        console.log('Redux state updated with job applications:', action.payload); // Vérifiez ici
       })
       .addCase(fetchJobApplications.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload as string;
+        console.error('Error in fetchJobApplications:', action.payload); // Log en cas d'erreur
       })
       
       // Fetch job application by ID

@@ -14,6 +14,7 @@ import { fetchLeaves } from '../store/leaveSlice';
 import { fetchMissions } from '../store/missionSlice';
 import { fetchWorkHours } from '../store/workHoursSlice';
 import { fetchJobApplications, approveJobApplication, rejectJobApplication } from '../store/jobApplicationSlice';
+import { fetchEmployees } from '../store/employeeSlice';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { format, subDays } from 'date-fns';
 import { Button } from '@/components/ui/button';
@@ -22,17 +23,29 @@ const DashboardPage: React.FC = () => {
   const dispatch = useDispatch();
   const { user } = useSelector((state: RootState) => state.auth);
   const jobApplications = useSelector((state: RootState) => state.jobApplication.jobApplications);
+  const employees = useSelector((state: RootState) => state.employee.employees);
+  const loading = useSelector((state: RootState) => state.employee.loading);
+  const error = useSelector((state: RootState) => state.employee.error);
   
   // Fetch data on component mount
   useEffect(() => {
     dispatch(fetchLeaves() as any);
     dispatch(fetchMissions() as any);
     dispatch(fetchWorkHours() as any);
-    
+  }, [dispatch]);
+
+  useEffect(() => {
     if (user?.user_type === 'admin') {
       dispatch(fetchJobApplications() as any);
     }
   }, [dispatch, user]);
+  useEffect(() => {
+    console.log('Job applications:', jobApplications); // Vérifiez les données récupérées
+  }, [jobApplications]);
+
+  useEffect(() => {
+    dispatch(fetchEmployees() as any);
+  }, [dispatch]);
   
   // Generate mock data for the work hours chart
   const generateWorkHoursData = () => {
@@ -41,7 +54,7 @@ const DashboardPage: React.FC = () => {
       const date = subDays(new Date(), i);
       data.push({
         day: format(date, 'EEE'),
-        hours: Math.floor(Math.random() * 5) + 5 // Random hours between 5-10
+        hours: Math.floor(Math.random() * 5) + 5 
       });
     }
     return data;
@@ -151,8 +164,8 @@ const DashboardPage: React.FC = () => {
               <CardTitle>Pending Job Applications</CardTitle>
             </CardHeader>
             <CardContent>
-              {jobApplications.length === 0 ? (
-                <p className="text-gray-600">No job applications found.</p>
+              {jobApplications.filter((app) => app.status === 'pending').length === 0 ? (
+                <p className="text-gray-600">No pending job applications found.</p>
               ) : (
                 <div className="grid grid-cols-1 gap-4">
                   {jobApplications
@@ -169,7 +182,7 @@ const DashboardPage: React.FC = () => {
                           <p className="text-sm text-gray-600">{application.email}</p>
                           <p className="text-sm text-gray-500">Position: {application.position}</p>
                           <p className="text-sm text-gray-500">
-                            Submitted on: {new Date(application.submitted_at).toLocaleDateString()}
+                            Submitted on: {new Date(application.created_at).toLocaleDateString()}
                           </p>
                         </div>
                         <div className="flex space-x-2">
@@ -194,6 +207,87 @@ const DashboardPage: React.FC = () => {
           </Card>
         </>
       )}
+      
+      {/* Job Applications */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Pending Job Applications</CardTitle>
+        </CardHeader>
+        <CardContent>
+          {jobApplications.filter((app) => app.status === 'pending').length === 0 ? (
+            <p className="text-gray-600">No pending job applications found.</p>
+          ) : (
+            <div className="grid grid-cols-1 gap-4">
+              {jobApplications
+                .filter((app) => app.status === 'pending')
+                .map((application) => (
+                  <div
+                    key={application.id}
+                    className="p-4 bg-gray-50 rounded-lg flex justify-between items-center"
+                  >
+                    <div>
+                      <h3 className="font-medium text-gray-900">
+                        {application.first_name} {application.last_name}
+                      </h3>
+                      <p className="text-sm text-gray-600">{application.email}</p>
+                      <p className="text-sm text-gray-500">Position: {application.position}</p>
+                      <p className="text-sm text-gray-500">
+                        Submitted on: {new Date(application.created_at).toLocaleDateString()}
+                      </p>
+                    </div>
+                    <div className="flex space-x-2">
+                      <Button
+                        variant="secondary"
+                        onClick={() => handleApprove(application.id)}
+                      >
+                        Approve
+                      </Button>
+                      <Button
+                        variant="destructive"
+                        onClick={() => handleReject(application.id)}
+                      >
+                        Reject
+                      </Button>
+                    </div>
+                  </div>
+                ))}
+            </div>
+          )}
+        </CardContent>
+      </Card>
+      {/* Team Members */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Team Members</CardTitle>
+        </CardHeader>
+        <CardContent>
+          {loading ? (
+            <p className="text-gray-600">Loading team members...</p>
+          ) : error ? (
+            <p className="text-red-600">Error: {error}</p>
+          ) : employees.length === 0 ? (
+            <p className="text-gray-600">No team members found.</p>
+          ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+              {employees.map((employee) => (
+                <div
+                  key={employee.id}
+                  className="p-4 bg-gray-50 rounded-lg flex flex-col items-center text-center"
+                >
+                  <div className="w-16 h-16 bg-primary-100 rounded-full flex items-center justify-center text-primary-700 font-bold text-xl">
+                    {employee.first_name[0]}{employee.last_name[0]}
+                  </div>
+                  <h3 className="mt-2 font-medium text-gray-900">
+                    {employee.first_name} {employee.last_name}
+                  </h3>
+                  <p className="text-sm text-gray-600">{employee.email}</p>
+                  <p className="text-sm text-gray-500">{employee.user_type}</p>
+                </div>
+              ))}
+            </div>
+          )}
+        </CardContent>
+      </Card>
     </MainLayout>
   );
 };

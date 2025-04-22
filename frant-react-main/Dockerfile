@@ -8,7 +8,7 @@ WORKDIR /app
 COPY package.json package-lock.json /app/
 
 # Installe les dépendances avec un délai d'attente augmenté
-RUN npm install --timeout=600000
+RUN npm install
 
 # Copie le reste des fichiers de l'application
 COPY . /app/

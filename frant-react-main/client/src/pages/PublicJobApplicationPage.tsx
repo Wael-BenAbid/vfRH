@@ -5,7 +5,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import axios from 'axios';
 import { useToast } from '@/hooks/use-toast';
-import { Link } from 'react-router-dom'; // Remplacement de wouter par react-router-dom
+import { Link } from 'react-router-dom';
 import { WaveyBackground } from '@/components/ui/wavey-background';
 import { AnimatedGradient } from '@/components/ui/animated-gradient';
 import { FloatingShapes } from '@/components/ui/floating-shapes';
@@ -110,45 +110,30 @@ const PublicJobApplicationPage: React.FC = () => {
   };
 
   const handleSubmit = async (data: FormValues) => {
-    setSubmitting(true);
-    setError(null);
-    
+    const formData = new FormData();
+
+    // Ajoutez toutes les données du formulaire à FormData
+    Object.entries(data).forEach(([key, value]) => {
+      if (key === 'cv_file') {
+        formData.append(key, value as File); // Ajoutez le fichier CV
+      } else {
+        formData.append(key, value as string); // Ajoutez les autres champs
+      }
+    });
+
     try {
-      const formData = new FormData();
-      
-      // Append all form fields to FormData
-      Object.entries(data).forEach(([key, value]) => {
-        if (key === 'cv_file') {
-          formData.append(key, value as File);
-        } else {
-          formData.append(key, value as string);
-        }
-      });
-      
-      await axios.post('/api/job-applications/', formData, {
+      const response = await axios.post('http://127.0.0.1:8000/api/job-applications/', formData, {
         headers: {
           'Content-Type': 'multipart/form-data',
         },
       });
-      
-      form.reset();
-      setFileName('');
-      setSubmitted(true);
-      
-      toast({
-        title: "Candidature soumise avec succès",
-        description: "Votre candidature a été soumise et est en attente d'examen.",
-      });
-    } catch (err: any) {
-      setError(err.response?.data?.message || 'Une erreur est survenue lors de la soumission de la candidature');
-      
-      toast({
-        title: "Erreur",
-        description: "Échec de la soumission de la candidature",
-        variant: "destructive",
-      });
-    } finally {
-      setSubmitting(false);
+      console.log('Application submitted successfully:', response.data);
+    } catch (error) {
+      if (axios.isAxiosError(error)) {
+        console.error('Error submitting application:', error.response?.data || error.message);
+      } else {
+        console.error('Unexpected error:', error);
+      }
     }
   };
   

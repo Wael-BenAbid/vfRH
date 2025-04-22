@@ -54,4 +54,8 @@ class InternshipSerializer(serializers.ModelSerializer):
 class JobApplicationSerializer(serializers.ModelSerializer):
     class Meta:
         model = JobApplication
-        fields = '__all__'
+        fields = [
+            'id', 'application_type', 'position', 'first_name', 'last_name',
+            'email', 'phone', 'education', 'experience', 'motivation', 'cv_file',
+            'status', 'created_at', 'user'
+        ]

@@ -58,6 +58,11 @@ class LeaveViewSet(viewsets.ModelViewSet):
     serializer_class = LeaveSerializer
     permission_classes = [permissions.IsAuthenticated]
     
+    def get_permissions(self):
+        if self.action == 'create':
+            return [permissions.AllowAny()]
+        return [permissions.IsAuthenticated()]
+    
     def get_queryset(self):
         """
         Limiter les résultats en fonction du type d'utilisateur
@@ -107,6 +112,11 @@ class MissionViewSet(viewsets.ModelViewSet):
     serializer_class = MissionSerializer
     permission_classes = [permissions.IsAuthenticated]
     
+    def get_permissions(self):
+        if self.action == 'create':
+            return [permissions.AllowAny()]
+        return [permissions.IsAuthenticated()]
+    
     def get_queryset(self):
         """
         Limiter les résultats en fonction du type d'utilisateur
@@ -139,6 +149,11 @@ class WorkHoursViewSet(viewsets.ModelViewSet):
     serializer_class = WorkHoursSerializer
     permission_classes = [permissions.IsAuthenticated]
     
+    def get_permissions(self):
+        if self.action == 'create':
+            return [permissions.AllowAny()]
+        return [permissions.IsAuthenticated()]
+    
     def get_queryset(self):
         """
         Limiter les résultats en fonction du type d'utilisateur
@@ -160,6 +175,11 @@ class InternshipViewSet(viewsets.ModelViewSet):
     queryset = Internship.objects.all()
     serializer_class = InternshipSerializer
     permission_classes = [permissions.IsAuthenticated]
+    
+    def get_permissions(self):
+        if self.action == 'create':
+            return [permissions.AllowAny()]
+        return [permissions.IsAuthenticated()]
     
     def get_queryset(self):
         """
@@ -225,6 +245,11 @@ class JobApplicationViewSet(viewsets.ModelViewSet):
     queryset = JobApplication.objects.all()
     serializer_class = JobApplicationSerializer
     permission_classes = [permissions.IsAuthenticated]
+    
+    def get_permissions(self):
+        if self.action == 'create':
+            return [permissions.AllowAny()]
+        return [permissions.IsAuthenticated()]
     
     def get_queryset(self):
         """

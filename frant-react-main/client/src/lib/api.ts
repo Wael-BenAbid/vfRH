@@ -126,8 +126,18 @@ export const changeInternshipStatus = async (id: number, status: string): Promis
 
 // Job Application API
 export const getJobApplications = async (): Promise<JobApplication[]> => {
-  const response = await axios.get<JobApplication[]>(`${API_URL}/job-applications/`);
-  return response.data;
+  try {
+    const response = await axios.get(`${API_URL}/job-applications/`, {
+      headers: {
+        Authorization: `Bearer ${localStorage.getItem('access_token')}`,
+      },
+    });
+    console.log('API Response:', response.data); // Vérifiez les données ici
+    return response.data;
+  } catch (error) {
+    console.error('Error fetching job applications:', error); // Log en cas d'erreur
+    throw error;
+  }
 };
 
 export const getJobApplicationById = async (id: number): Promise<JobApplication> => {
@@ -146,11 +156,19 @@ export const updateJobApplication = async (id: number, applicationData: UpdateJo
 };
 
 export const approveJobApplication = async (id: number): Promise<JobApplication> => {
-  const response = await axios.post<JobApplication>(`${API_URL}/job-applications/${id}/approve/`, {});
-  return response.data;
+  const response = await axios.post<JobApplication>(`/api/job-applications/${id}/approve/`, null, {
+    headers: {
+      Authorization: `Bearer ${localStorage.getItem('access_token')}`,
+    },
+  });
+  return response.data; // Retournez l'objet JobApplication
 };
 
 export const rejectJobApplication = async (id: number): Promise<JobApplication> => {
-  const response = await axios.post<JobApplication>(`${API_URL}/job-applications/${id}/reject/`, {});
-  return response.data;
+  const response = await axios.post<JobApplication>(`/api/job-applications/${id}/reject/`, null, {
+    headers: {
+      Authorization: `Bearer ${localStorage.getItem('access_token')}`,
+    },
+  });
+  return response.data; // Retournez l'objet JobApplication
 };
