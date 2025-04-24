@@ -1,38 +1,53 @@
-# Utilise une image officielle Python 3.10 comme image parent
-FROM python:3.10-slim
+# Étape de construction
+FROM python:3.10-slim as builder
 
-# Définit le répertoire de travail
 WORKDIR /app
 
-# Installe les dépendances système nécessaires
-RUN apt-get update && apt-get install -y \
-    libpq-dev gcc && \
-    apt-get clean && rm -rf /var/lib/apt/lists/*
+# Installation des dépendances système
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends \
+    build-essential \
+    libpq-dev && \
+    apt-get clean && \
+    rm -rf /var/lib/apt/lists/*
 
-# Met à jour pip
-RUN pip install --upgrade pip
+# Création de l'environnement virtuel
+RUN python -m venv /opt/venv
+ENV PATH="/opt/venv/bin:$PATH"
 
-# Copie les fichiers nécessaires
-COPY requirements.txt /app/
+# Installation des dépendances
+COPY requirements.txt .
+RUN pip install --no-cache-dir --upgrade pip && \
+    pip install --no-cache-dir -r requirements.txt
 
-# Installe les dépendances Python
-RUN pip install --no-cache-dir -r requirements.txt
+# Étape finale
+FROM python:3.10-slim
 
-# Copie l'application Django dans le conteneur
-COPY . /app/
+WORKDIR /app
 
-# Définit STATIC_ROOT pour collecter les fichiers statiques
-ENV STATIC_ROOT=/app/staticfiles
+# Copie de l'environnement virtuel
+COPY --from=builder /opt/venv /opt/venv
+ENV PATH="/opt/venv/bin:$PATH"
 
-# Exécute la commande collectstatic pour gérer les fichiers statiques
-RUN python manage.py collectstatic --noinput || echo "Collectstatic failed, continuing..."
+# Utilisateur non-root
+RUN useradd -m django && \
+    chown django:django /app
+USER django
 
-# Expose le port sur lequel l'application va tourner
+# Copie de l'application
+COPY --chown=django:django . .
+
+# Configuration environnement
+ENV PYTHONUNBUFFERED=1
+ENV PYTHONDONTWRITEBYTECODE=1
+
+# Fichiers statiques
+RUN python manage.py collectstatic --noinput --clear
+
 EXPOSE 8000
 
-# Définit les variables d'environnement par défaut
-ENV DJANGO_SETTINGS_MODULE=SystemeRH.settings
-ENV PYTHONUNBUFFERED=1
+# Script d'entrée
+COPY docker-entrypoint.sh .
+RUN chmod +x docker-entrypoint.sh
 
-# Commande pour démarrer l'application avec Gunicorn
-CMD ["gunicorn", "--bind", "0.0.0.0:8000", "SystemeRH.wsgi:application"]
+CMD ["./docker-entrypoint.sh"]

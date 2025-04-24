@@ -57,11 +57,8 @@ interface JobApplicationFormProps {
   onSubmit: (data: FormData) => void;
 }
 
-const JobApplicationForm: React.FC<JobApplicationFormProps> = ({ 
-  open, 
-  onClose, 
-  onSubmit 
-}) => {
+const JobApplicationForm: React.FC<JobApplicationFormProps> = ({ open, onClose, onSubmit }) => { 
+
   const { toast } = useToast();
   const [fileName, setFileName] = useState<string>('');
   

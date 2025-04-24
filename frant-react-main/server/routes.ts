@@ -2,7 +2,8 @@ import express, { type Express, Request, Response } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import axios from "axios";
-
+import PublicJobApplicationPage from '../client/src/pages/JobApplicationsPage';
+import path from "path";
 // API base URL for Django backend
 const API_BASE_URL = "http://localhost:8000/api";
 

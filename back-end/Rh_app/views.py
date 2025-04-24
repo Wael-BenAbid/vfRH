@@ -24,6 +24,7 @@ logger = logging.getLogger(__name__)
 class UserViewSet(viewsets.ModelViewSet):
     queryset = User.objects.all()
     serializer_class = UserSerializer
+    permission_classes = [permissions.IsAuthenticated]
     
     def get_permissions(self):
         if self.action == 'create':
@@ -52,6 +53,12 @@ class UserViewSet(viewsets.ModelViewSet):
         if user.is_superuser or user.user_type == 'admin':
             return User.objects.all()
         return User.objects.filter(id=user.id)
+    
+    def update(self, request, *args, **kwargs):
+        user = self.get_object()
+        if request.user.is_superuser or request.user.user_type == 'admin':
+            return super().update(request, *args, **kwargs)
+        return Response({'detail': 'Not authorized'}, status=403)
 
 class LeaveViewSet(viewsets.ModelViewSet):
     queryset = Leave.objects.all()

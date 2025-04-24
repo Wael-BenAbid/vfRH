@@ -1,3 +1,5 @@
+import { ReactNode } from "react";
+
 // User Types
 export interface User {
   id: number;
@@ -7,6 +9,7 @@ export interface User {
   leave_balance: number;
   first_name: string;
   last_name: string;
+  position: string;
 }
 
 export interface LoginCredentials {

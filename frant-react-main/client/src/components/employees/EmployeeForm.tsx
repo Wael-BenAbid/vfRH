@@ -42,9 +42,9 @@ type FormValues = z.infer<typeof formSchema>;
 interface EmployeeFormProps {
   open: boolean;
   onClose: () => void;
-  onSubmit: (data: FormValues) => void;
+  onSubmit: (data: FormValues & { position: React.ReactNode }) => void;
+  
 }
-
 const EmployeeForm: React.FC<EmployeeFormProps> = ({ open, onClose, onSubmit }) => {
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
@@ -60,8 +60,8 @@ const EmployeeForm: React.FC<EmployeeFormProps> = ({ open, onClose, onSubmit }) 
   });
 
   const handleSubmit = (data: FormValues) => {
-    onSubmit(data);
-    form.reset();
+      onSubmit({ ...data, position: <span>Default Position</span> });
+      form.reset();
   };
 
   return (

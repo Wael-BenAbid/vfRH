@@ -1,4 +1,5 @@
 import { createSlice, createAsyncThunk, PayloadAction } from '@reduxjs/toolkit';
+import axios from 'axios';
 import { User } from '../types';
 import * as api from '../lib/api';
 
@@ -46,6 +47,45 @@ export const fetchEmployeeById = createAsyncThunk(
   }
 );
 
+export const updateEmployee = createAsyncThunk(
+  'employee/updateEmployee',
+  async ({ id, employeeData }: { id: number; employeeData: Partial<User> }, { rejectWithValue }) => {
+    try {
+      const response = await axios.put(`/api/users/${id}/`, employeeData, {
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem('access_token')}`,
+          'Content-Type': 'application/json',
+        },
+      });
+      return response.data;
+    } catch (error) {
+      if (axios.isAxiosError(error)) {
+        return rejectWithValue(error.response?.data?.message || error.message);
+      }
+      return rejectWithValue('An unknown error occurred');
+    }
+  }
+);
+
+export const deleteEmployee = createAsyncThunk(
+  'employee/deleteEmployee',
+  async (id: number, { rejectWithValue }) => {
+    try {
+      await axios.delete(`/api/users/${id}/`, {
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem('access_token')}`,
+        },
+      });
+      return id;
+    } catch (error) {
+      if (axios.isAxiosError(error)) {
+        return rejectWithValue(error.response?.data?.message || error.message);
+      }
+      return rejectWithValue('An unknown error occurred');
+    }
+  }
+);
+
 const employeeSlice = createSlice({
   name: 'employee',
   initialState,
@@ -72,7 +112,7 @@ const employeeSlice = createSlice({
         state.loading = false;
         state.error = action.payload as string;
       })
-      
+
       // Fetch employee by ID
       .addCase(fetchEmployeeById.pending, (state) => {
         state.loading = true;
@@ -83,6 +123,39 @@ const employeeSlice = createSlice({
         state.selectedEmployee = action.payload;
       })
       .addCase(fetchEmployeeById.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload as string;
+      })
+
+      // Update employee
+      .addCase(updateEmployee.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(updateEmployee.fulfilled, (state, action: PayloadAction<User>) => {
+        state.loading = false;
+        state.employees = state.employees.map(employee => 
+          employee.id === action.payload.id ? action.payload : employee
+        );
+        state.selectedEmployee = action.payload;
+      })
+      .addCase(updateEmployee.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload as string;
+      })
+
+      // Delete employee
+      .addCase(deleteEmployee.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(deleteEmployee.fulfilled, (state, action: PayloadAction<number>) => {
+        state.loading = false;
+        state.employees = state.employees.filter(
+          employee => employee.id !== action.payload
+        );
+      })
+      .addCase(deleteEmployee.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload as string;
       });

@@ -1,4 +1,5 @@
-import React, { useEffect } from 'react';
+// DashboardPage.tsx
+import React, { useEffect, useState } from 'react';
 import MainLayout from '../components/layouts/MainLayout';
 import DashboardStats from '../components/dashboard/DashboardStats';
 import RecentActivity from '../components/dashboard/RecentActivity';
@@ -18,65 +19,105 @@ import { fetchEmployees } from '../store/employeeSlice';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { format, subDays } from 'date-fns';
 import { Button } from '@/components/ui/button';
+import { Link } from 'react-router-dom';
+import JobApplicationForm from '../pages/JobApplicationsPage';
+import axios from 'axios';
+
+const fetchJobApplicationsWithToken = async (token: string) => {
+  try {
+    const response = await axios.get('http://localhost:8000/api/job-applications/', {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+    return response.data;
+  } catch (error) {
+    console.error('Error fetching job applications:', error);
+    return [];
+  }
+};
 
 const DashboardPage: React.FC = () => {
   const dispatch = useDispatch();
   const { user } = useSelector((state: RootState) => state.auth);
-  const jobApplications = useSelector((state: RootState) => state.jobApplication.jobApplications);
-  const employees = useSelector((state: RootState) => state.employee.employees);
-  const loading = useSelector((state: RootState) => state.employee.loading);
-  const error = useSelector((state: RootState) => state.employee.error);
+  const {
+    jobApplications: reduxJobApplications,
+    loading: applicationsLoading,
+    error: applicationsError
+  } = useSelector((state: RootState) => state.jobApplication);
+  const { employees, loading: employeesLoading, error: employeesError } = useSelector((state: RootState) => state.employee);
   
-  // Fetch data on component mount
+  const [isFormOpen, setIsFormOpen] = useState(false);
+  const [jobApplications, setJobApplications] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  // Fetch initial data
   useEffect(() => {
     dispatch(fetchLeaves() as any);
     dispatch(fetchMissions() as any);
     dispatch(fetchWorkHours() as any);
+    dispatch(fetchEmployees() as any);
   }, [dispatch]);
 
+  // Fetch job applications
+  useEffect(() => {
+    dispatch(fetchJobApplications() as any);
+  }, [dispatch]);
+
+  // Fetch job applications for admin
   useEffect(() => {
     if (user?.user_type === 'admin') {
+      console.log('Fetching job applications...');
       dispatch(fetchJobApplications() as any);
     }
   }, [dispatch, user]);
-  useEffect(() => {
-    console.log('Job applications:', jobApplications); // Vérifiez les données récupérées
-  }, [jobApplications]);
 
+  // Fetch job applications using token
   useEffect(() => {
-    dispatch(fetchEmployees() as any);
-  }, [dispatch]);
-  
-  // Generate mock data for the work hours chart
-  const generateWorkHoursData = () => {
-    const data = [];
-    for (let i = 6; i >= 0; i--) {
-      const date = subDays(new Date(), i);
-      data.push({
-        day: format(date, 'EEE'),
-        hours: Math.floor(Math.random() * 5) + 5 
-      });
+    const token = localStorage.getItem('token'); // Récupérez le token depuis le stockage local
+    if (token) {
+      fetchJobApplicationsWithToken(token)
+        .then((data) => {
+          setJobApplications(data);
+          setLoading(false);
+        })
+        .catch((err) => {
+          setError('Failed to fetch job applications');
+          setLoading(false);
+        });
+    } else {
+      setError('No token found');
+      setLoading(false);
     }
-    return data;
-  };
-  
-  const workHoursData = generateWorkHoursData();
+  }, []);
 
-  // Handle approve and reject actions
-  const handleApprove = (id: number) => {
-    dispatch(approveJobApplication(id) as any);
+  // Log job applications in Redux
+  useEffect(() => {
+    console.log('Job applications in Redux:', reduxJobApplications);
+  }, [reduxJobApplications]);
+
+  // Work hours chart data
+  const generateWorkHoursData = () => {
+    return Array.from({ length: 7 }, (_, i) => ({
+      day: format(subDays(new Date(), 6 - i), 'EEE'),
+      hours: Math.floor(Math.random() * 5) + 5
+    }));
   };
 
-  const handleReject = (id: number) => {
-    dispatch(rejectJobApplication(id) as any);
+  // Handlers for job applications
+  const handleApplicationAction = (id: number, action: 'approve' | 'reject') => {
+    if (action === 'approve') {
+      dispatch(approveJobApplication(id) as any);
+    } else {
+      dispatch(rejectJobApplication(id) as any);
+    }
   };
 
   return (
     <MainLayout title="Dashboard">
-      {/* Stats Cards */}
       <DashboardStats />
-      
-      {/* Main Content */}
+
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
         {/* Work Hours Chart */}
         <Card className="md:col-span-2">
@@ -86,15 +127,7 @@ const DashboardPage: React.FC = () => {
           <CardContent>
             <div className="h-80">
               <ResponsiveContainer width="100%" height="100%">
-                <BarChart
-                  data={workHoursData}
-                  margin={{
-                    top: 5,
-                    right: 30,
-                    left: 20,
-                    bottom: 5,
-                  }}
-                >
+                <BarChart data={generateWorkHoursData()}>
                   <CartesianGrid strokeDasharray="3 3" />
                   <XAxis dataKey="day" />
                   <YAxis />
@@ -105,7 +138,7 @@ const DashboardPage: React.FC = () => {
             </div>
           </CardContent>
         </Card>
-        
+
         {/* Recent Activity */}
         <Card className="md:col-span-1">
           <CardHeader>
@@ -116,176 +149,92 @@ const DashboardPage: React.FC = () => {
           </CardContent>
         </Card>
       </div>
-      
-      {/* Messages, Announcements, or other content can go here */}
+
       {user?.user_type === 'admin' && (
         <>
-          <Card>
+          {/* Admin Quick Links */}
+          <Card className="mb-6">
             <CardHeader>
-              <CardTitle>Admin Quick Links</CardTitle>
+              <CardTitle>Admin Overview</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
-                <div className="p-4 bg-primary-50 rounded-lg text-center">
-                  <h3 className="font-medium text-primary-900">Pending Leaves</h3>
-                  <p className="text-2xl font-bold text-primary-700">
-                    {useSelector((state: RootState) => 
-                      state.leave.leaves.filter(leave => leave.status === 'pending').length
-                    )}
-                  </p>
-                </div>
-                <div className="p-4 bg-amber-50 rounded-lg text-center">
-                  <h3 className="font-medium text-amber-900">Active Missions</h3>
-                  <p className="text-2xl font-bold text-amber-700">
-                    {useSelector((state: RootState) => 
-                      state.mission.missions.filter(mission => !mission.completed).length
-                    )}
-                  </p>
-                </div>
-                <div className="p-4 bg-green-50 rounded-lg text-center">
-                  <h3 className="font-medium text-green-900">New Applications</h3>
-                  <p className="text-2xl font-bold text-green-700">
-                    {useSelector((state: RootState) => 
-                      state.jobApplication.jobApplications.filter(app => app.status === 'pending').length
-                    )}
-                  </p>
-                </div>
-                <div className="p-4 bg-blue-50 rounded-lg text-center">
-                  <h3 className="font-medium text-blue-900">Total Employees</h3>
-                  <p className="text-2xl font-bold text-blue-700">
-                    {useSelector((state: RootState) => state.employee.employees.length)}
-                  </p>
-                </div>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                {/* ... (keep your existing stats cards) */}
               </div>
             </CardContent>
           </Card>
+
+          {/* Pending Job Applications */}
           <Card>
             <CardHeader>
               <CardTitle>Pending Job Applications</CardTitle>
             </CardHeader>
             <CardContent>
-              {jobApplications.filter((app) => app.status === 'pending').length === 0 ? (
-                <p className="text-gray-600">No pending job applications found.</p>
+              {applicationsLoading ? (
+                <p>Loading applications...</p>
+              ) : applicationsError ? (
+                <p className="text-red-500">{applicationsError}</p>
+              ) : reduxJobApplications.length === 0 ? (
+                <p className="text-gray-600">No job applications found</p>
               ) : (
                 <div className="grid grid-cols-1 gap-4">
-                  {jobApplications
-                    .filter((app) => app.status === 'pending')
-                    .map((application) => (
-                      <div
-                        key={application.id}
-                        className="p-4 bg-gray-50 rounded-lg flex justify-between items-center"
-                      >
-                        <div>
-                          <h3 className="font-medium text-gray-900">
-                            {application.first_name} {application.last_name}
-                          </h3>
-                          <p className="text-sm text-gray-600">{application.email}</p>
-                          <p className="text-sm text-gray-500">Position: {application.position}</p>
-                          <p className="text-sm text-gray-500">
-                            Submitted on: {new Date(application.created_at).toLocaleDateString()}
-                          </p>
-                        </div>
-                        <div className="flex space-x-2">
-                          <Button
-                            variant="secondary"
-                            onClick={() => handleApprove(application.id)}
-                          >
-                            Approve
-                          </Button>
-                          <Button
-                            variant="destructive"
-                            onClick={() => handleReject(application.id)}
-                          >
-                            Reject
-                          </Button>
-                        </div>
+                  {reduxJobApplications.map((application) => (
+                    <div key={application.id} className="p-4 bg-gray-50 rounded-lg flex justify-between items-center">
+                      <div>
+                        <h3 className="font-medium text-gray-900">
+                          {application.first_name} {application.last_name}
+                        </h3>
+                        <p className="text-sm text-gray-600">{application.email}</p>
+                        <p className="text-sm text-gray-500">Position: {application.position}</p>
+                        <p className="text-sm text-gray-500">
+                          Submitted on: {new Date(application.created_at).toLocaleDateString()}
+                        </p>
                       </div>
-                    ))}
+                    </div>
+                  ))}
                 </div>
               )}
             </CardContent>
           </Card>
         </>
       )}
-      
-      {/* Job Applications */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Pending Job Applications</CardTitle>
-        </CardHeader>
-        <CardContent>
-          {jobApplications.filter((app) => app.status === 'pending').length === 0 ? (
-            <p className="text-gray-600">No pending job applications found.</p>
-          ) : (
-            <div className="grid grid-cols-1 gap-4">
-              {jobApplications
-                .filter((app) => app.status === 'pending')
-                .map((application) => (
-                  <div
-                    key={application.id}
-                    className="p-4 bg-gray-50 rounded-lg flex justify-between items-center"
-                  >
-                    <div>
-                      <h3 className="font-medium text-gray-900">
-                        {application.first_name} {application.last_name}
-                      </h3>
-                      <p className="text-sm text-gray-600">{application.email}</p>
-                      <p className="text-sm text-gray-500">Position: {application.position}</p>
-                      <p className="text-sm text-gray-500">
-                        Submitted on: {new Date(application.created_at).toLocaleDateString()}
-                      </p>
-                    </div>
-                    <div className="flex space-x-2">
-                      <Button
-                        variant="secondary"
-                        onClick={() => handleApprove(application.id)}
-                      >
-                        Approve
-                      </Button>
-                      <Button
-                        variant="destructive"
-                        onClick={() => handleReject(application.id)}
-                      >
-                        Reject
-                      </Button>
-                    </div>
-                  </div>
-                ))}
-            </div>
-          )}
-        </CardContent>
-      </Card>
+
       {/* Team Members */}
       <Card>
         <CardHeader>
           <CardTitle>Team Members</CardTitle>
         </CardHeader>
         <CardContent>
-          {loading ? (
-            <p className="text-gray-600">Loading team members...</p>
-          ) : error ? (
-            <p className="text-red-600">Error: {error}</p>
+          {employeesLoading ? (
+            <p>Loading team members...</p>
+          ) : employeesError ? (
+            <p className="text-red-500">{employeesError}</p>
           ) : employees.length === 0 ? (
-            <p className="text-gray-600">No team members found.</p>
+            <p className="text-gray-600">No team members found</p>
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
               {employees.map((employee) => (
-                <div
-                  key={employee.id}
-                  className="p-4 bg-gray-50 rounded-lg flex flex-col items-center text-center"
-                >
-                  <div className="w-16 h-16 bg-primary-100 rounded-full flex items-center justify-center text-primary-700 font-bold text-xl">
-                    {employee.first_name[0]}{employee.last_name[0]}
+                <div key={employee.id} className="p-4 bg-muted rounded-lg text-center">
+                  <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <span className="text-primary font-bold text-xl">
+                      {employee.first_name[0]}
+                      {employee.last_name[0]}
+                    </span>
                   </div>
-                  <h3 className="mt-2 font-medium text-gray-900">
+                  <h3 className="font-medium">
                     {employee.first_name} {employee.last_name}
                   </h3>
-                  <p className="text-sm text-gray-600">{employee.email}</p>
-                  <p className="text-sm text-gray-500">{employee.user_type}</p>
+                  <p className="text-sm text-muted-foreground">{employee.position}</p>
                 </div>
               ))}
             </div>
           )}
+          {/* Bouton pour accéder à la page Employees */}
+          <div className="mt-4 text-center">
+            <Link to="/employees">
+              <Button variant="default">View All Employees</Button>
+            </Link>
+          </div>
         </CardContent>
       </Card>
     </MainLayout>

@@ -110,11 +110,7 @@ function AppRouter() {
         path="/job-applications"
         element={
           <PrivateRoute>
-            <JobApplicationsPage 
-              open={true} 
-              onClose={() => console.log("Closed")} 
-              onSubmit={(data) => console.log("Submitted", data)} 
-            />
+            <JobApplicationsPage/>
           </PrivateRoute>
         }
       />
