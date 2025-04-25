@@ -29,25 +29,24 @@ WORKDIR /app
 COPY --from=builder /opt/venv /opt/venv
 ENV PATH="/opt/venv/bin:$PATH"
 
-# Utilisateur non-root
-RUN useradd -m django && \
-    chown django:django /app
-USER django
-
-# Copie de l'application
-COPY --chown=django:django . .
-
 # Configuration environnement
 ENV PYTHONUNBUFFERED=1
 ENV PYTHONDONTWRITEBYTECODE=1
 
+# Copie de l'application
+COPY . .
+
+# Donner les permissions d'exécution au script
+RUN chmod +x docker-entrypoint.sh
+
+# Créer l'utilisateur et donner les droits
+RUN useradd -m django && chown -R django:django /app
+
 # Fichiers statiques
 RUN python manage.py collectstatic --noinput --clear
 
-EXPOSE 8000
+USER django
 
-# Script d'entrée
-COPY docker-entrypoint.sh .
-RUN chmod +x docker-entrypoint.sh
+EXPOSE 8000
 
 CMD ["/app/docker-entrypoint.sh"]
