@@ -36,12 +36,10 @@ const formSchema = z.object({
   title: z.string().min(3, 'Title must be at least 3 characters'),
   description: z.string().min(10, 'Please provide a detailed description'),
   assigned_to: z.number({
-    required_error: "Please select an employee",
-    invalid_type_error: "Please select an employee",
+    error: "Please select an employee",
   }),
   supervisor: z.number({
-    required_error: "Please select a supervisor",
-    invalid_type_error: "Please select a supervisor",
+    error: "Please select a supervisor",
   }),
   deadline: z.string().min(1, 'Deadline is required'),
 });

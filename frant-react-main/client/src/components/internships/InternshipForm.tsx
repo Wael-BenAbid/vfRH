@@ -33,12 +33,10 @@ import { User } from '../../types';
 
 const formSchema = z.object({
   intern: z.number({
-    required_error: "Please select an intern",
-    invalid_type_error: "Please select an intern",
+    error: "Please select an intern",
   }),
   supervisor: z.number({
-    required_error: "Please select a supervisor",
-    invalid_type_error: "Please select a supervisor",
+    error: "Please select a supervisor",
   }),
   start_date: z.string().min(1, 'Start date is required'),
   end_date: z.string().min(1, 'End date is required'),
