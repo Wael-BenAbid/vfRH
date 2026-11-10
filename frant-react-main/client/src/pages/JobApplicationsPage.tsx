@@ -34,7 +34,7 @@ const ACCEPTED_FILE_TYPES = ["application/pdf", "application/msword", "applicati
 
 const formSchema = z.object({
   application_type: z.enum(['employee', 'intern'], {
-    required_error: "Please select application type",
+    error: "Please select application type",
   }),
   position: z.string().min(3, 'Position name is required'),
   first_name: z.string().min(1, 'First name is required'),
